@@ -6,7 +6,7 @@ heres a link to download it: https://drive.google.com/drive/folders/1NWCQsNTwOwd
 TODO:
 
 - **Repo**
-  -Clean up the directory structure
+    -Clean up the directory structure
 
 - **Technicalities:**
   - **Code:**
