@@ -1,0 +1,11 @@
+proc print_ith_sec(){
+k = 0
+forsec $o2.all {
+if(k == $1){
+$o3 = new SectionRef()
+$o3.sec { print secname() 
+}
+}
+k = k +1
+}}
+

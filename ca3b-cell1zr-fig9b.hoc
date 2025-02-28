@@ -1,0 +1,269 @@
+//adapted from Hemond et al. 2008 model (modeldb accession no.:101629) 
+
+//load_file("nrngui.hoc")
+cvode_active(1)
+
+celsius = 35.0  
+freq=20
+
+numaxon=1
+numsoma=1
+numbasal=52
+numapical=85
+
+//Assuming that D-type K current is polarized to the distal apical dend > 150 um
+KaDt = 50		//cf. 50 [um] in Kim Jonas Fig4E; The distance where gKa density starts to increase. 
+KaSlope = 5.5e-5	//5.5e-5[(S/cm2)/um] in Kim Jonas Fig4E; The slope of gKa increase. 
+NaDt    = 150   // gNa begins to increase for distance > NaDt (um); 100 ~ 150 in Kim Jonas (2012)
+DendNa = 0.2  //gNa ratio prox apical_dendrite to soma; 0.2 in Kim Jonas (2012)
+NaSlope = 9.615e-05  // 14e-5 [mS/cm2/um] in Kim Jonas Fig4 (2012)
+Basalgkir = 2.43
+SLgkir = 1.07
+SRgkir = 4.79
+SLMgkir = 5.25
+
+xopen("geo-cell1zr.hoc")         
+xopen("fixnseg.hoc")
+
+objref time, y, y2, infile, ifile, currt, curr
+
+forall {insert pas area(.5)}
+
+forsec "dendrite" { 
+	insert ds
+	insert hd 
+        insert na3 
+        insert kdr 
+	insert kap 
+	insert cacum depth_cacum=diam/2
+        insert cal 
+        insert can 
+        insert cat 
+	insert cagk  
+	insert KahpM95 
+	insert kir
+	insert kcas
+}
+
+forsec "apical_dendrite" { 
+	insert ds
+	insert hd 
+        insert na3 
+        insert kdr 
+	insert kap 
+	insert cacum depth_cacum=diam/2
+        insert cal 
+        insert can 
+        insert cat 
+	insert cagk  
+	insert KahpM95 
+	insert kir
+	insert kcas
+}
+forsec "soma" { 
+	insert ds
+	insert hd 
+        insert na3 
+        insert kdr 
+	insert kap 
+	insert km
+	insert kd
+	insert cacum depth_cacum=diam/2
+        insert cal 
+        insert can 
+        insert cat 
+	insert cagk  
+	insert KahpM95 
+	insert kir
+	insert kcas
+}
+
+forsec "axon" {   
+	insert na3 
+        insert kdr 
+        insert kap 
+}
+
+// Functions for setting up distributions of ion channels
+
+proc dist_NaKJ() {local xdist
+	forall gbar_na3 = gna 
+	forsec "soma"  gbar_na3 = gna
+	forsec "axon"  gbar_na3 = gna*AXONM
+	gNaDend = gna*DendNa //##
+	forall for (x) if(issection("apical_dendrite.*")) {
+		xdist = abs(distance(x))
+		if((xdist > NaDt)&&(gna>0.))	{
+			gbar_na3(x)	=  gNaDend + NaSlope*(xdist-NaDt)
+		} else gbar_na3(x) = gNaDend
+	}	 
+}
+
+proc dist_Ka() {local xdist
+	forall for (x) if(!issection("axon.*")) {
+		gkabar_kap(x)	= KMULT
+		xdist = abs(distance(x))
+		if(xdist > KaDt) gkabar_kap(x)	= KMULT + KaSlope * (xdist - KaDt) 
+
+	}
+}
+
+proc dist_Kir() {local xdist
+	forsec "soma"  gkbar_kir= gkir
+	forall for (x) if(issection("apical_dendrite.*")) {
+		xdist = abs(distance(x))
+		if((xdist > 150)&&( xdist <400))	{
+			gkbar_kir(x)	=  gkir* SRgkir
+		} if ((xdist < 150)){
+            gkbar_kir(x) = gkir*SLgkir
+	}	if ((xdist > 400)){
+            gkbar_kir(x) = gkir*SLMgkir
+} 
+}
+    forall for (x) if(issection("dendrite.*")) {
+        gkbar_kir(x) = gkir* Basalgkir
+}
+}
+
+//To reduce gKa
+proc condka() {local factor
+	dist_Ka()
+	if($1!=1) forall for(x) gkabar_kap(x)*=$1
+}
+
+//To reduce gNa
+proc condna() {local factor
+	dist_NaKJ()
+	if($1!=1) forall for(x)gbar_na3(x)*=$1
+}
+
+forsec "axon" Ra=RaAll/3
+forall if(ismembrane("hd")) {ehd_hd=-30}
+
+//xopen("ca3b-cell1zr-fig9b.ses")
+//PlotShape[0].exec_menu("Shape Plot")
+//PlotShape[0].show(0)
+
+proc init() {
+    forsec "soma" {v=Vrest e_pas=epas g_pas=gpas Rm = 1./gpas Ra=RaAll cm=Cm ek=-90 ena=55}
+	forsec "axon" {v=Vrest e_pas=epas g_pas=gpas Rm = 1./gpas Ra=RaAll cm=Cm ek=-90 ena=55}
+    forsec "dendrite" {v=Vrest e_pas=epas g_pas=gpas*2 Rm = (1./gpas)/2. Ra=RaAll cm=Cm*2. ek=-90 ena=55}
+    forsec "apical_dendrite" {v=Vrest e_pas=epas g_pas=gpas*2 Rm = (1./gpas)/2. Ra=RaAll cm=Cm*2. ek=-90 ena=55}
+    
+	geom_nseg()
+	access soma
+	soma distance()
+	maxdist=0
+	forall for(x) {if (distance(x)>maxdist) {maxdist=distance(x)}}
+	
+	dist_Kir()
+	dist_NaKJ()
+	dist_Ka()
+	condna(na_block)
+	condka(ka_block)
+	
+	forsec "soma" {   
+	if (ismembrane("cal")) {
+        gcalbar_cal=gcal
+        gcanbar_can=gcan
+        gcatbar_cat=gcat }
+	gbar_cagk= gKc 
+	gbar_KahpM95 = gahp 
+	//gkbar_kir = gkir
+	sh_kir = kir_sh
+	gbar_kcas = gkcas   
+	ghdbar_hd=ghd
+	//gbar_na3=gna  
+	gkdrbar_kdr=gkdr 
+	//gkabar_kap = KMULT
+	sh_hd = ih_sh
+	gbar_km= gkm
+	sh_km = km_sh
+	gkdbar_kd = gkd
+	sh_kap = ka_sh
+}
+
+forsec "axon" {   
+	//gbar_na3=gna*AXONM 
+        gkdrbar_kdr=gkdr 
+        gkabar_kap = KMULT  sh_kap=0
+}
+
+forsec "dendrite" {
+	if (ismembrane("cal")) {
+        gcalbar_cal=gcal
+        gcanbar_can=gcan
+        gcatbar_cat=gcat }
+	gbar_cagk= gKc 
+	gbar_KahpM95 = gahp 
+	//gkbar_kir = gkir
+	sh_kir = kir_sh
+	gbar_kcas = gkcas   
+	ghdbar_hd=ghd
+    //gbar_na3=gna 
+    gkdrbar_kdr=gkdr
+	//gkabar_kap=KMULT
+	sh_hd = ih_sh
+	sh_kap = ka_sh
+
+}
+
+forsec "apical_dendrite" {
+	if (ismembrane("cal")) {
+        gcalbar_cal=gcal
+        gcanbar_can=gcan
+        gcatbar_cat=gcat }
+	gbar_cagk= gKc 
+	gbar_KahpM95 = gahp 
+	//gkbar_kir = gkir
+	sh_kir = kir_sh
+	gbar_kcas = gkcas   
+	ghdbar_hd=ghd
+    //gbar_na3=gna 
+    gkdrbar_kdr=gkdr
+	//gkabar_kap=KMULT
+	sh_hd = ih_sh
+	sh_kap = ka_sh
+
+}
+	finitialize(v)
+       fcurrent()
+	finitialize(v)
+//        forall for(x) {
+//	if (ismembrane("cal")) {e_pas(x)=v(x)+(i_hd(x)+ina(x)+ik(x)+ica(x))/g_pas(x)
+//		} else {
+//		e_pas(x)=v(x)+(ina(x)+ik(x))/g_pas(x)
+//		}
+//	}
+	cvode.re_init()
+}
+
+
+proc fig9b() {
+gpas = gpas_val
+epas = epas_val
+Vrest = vrest_val
+KMULT = gka_val
+gkm = gkm_val
+gkcas = gkcas_val
+gkir = gkir_val
+gkdr = gkdr_val
+gkd = gkd_val
+gcal = gcal_val
+gcan = gcan_val
+gcat = gcat_val
+gKc = gKc_val
+gahp = gahp_val
+ghd = ghd_val
+km_sh = km_sh_val
+ih_sh = ih_sh_val
+kir_sh = kir_sh_val
+ka_sh = ka_sh_val
+ka_block = ka_block_val
+na_block = na_block_val
+run()
+}
+
+
+
+

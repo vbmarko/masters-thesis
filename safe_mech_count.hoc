@@ -1,0 +1,8 @@
+func safe_mech_count() {
+    type = $1
+    $o2 = new MechanismType(type)
+    iferr { return 0 }
+    cnt = $o2.count()
+    return cnt
+}
+

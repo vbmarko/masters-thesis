@@ -1,0 +1,9 @@
+proc ref_ith_sec(){
+k = 0
+forall {
+if(k == $1){
+$o2 = new SectionRef()
+}
+k = k +1
+}}
+

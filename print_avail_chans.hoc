@@ -1,0 +1,9 @@
+objref ch
+strdef mechname
+ch = new MechanismType(0)  // 0 selects density mechanisms
+for i = 0, ch.count()-1 {
+    ch.select(i)          // Set the mechanism at index i as current
+    ch.selected(mechname) // Retrieve its name into mechname
+    print mechname        // Print the mechanism's name
+}
+

@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+g++ -o nrnc main.c util.c my_nrn_lib.c gsl_funs.c modlreg.o -I./nrn_lib/include -L./nrn_lib/lib -lnrniv -lgsl
+

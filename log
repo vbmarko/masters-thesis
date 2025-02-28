@@ -1,0 +1,22 @@
+
+=================================================================
+==267535==ERROR: LeakSanitizer: detected memory leaks
+
+Direct leak of 4320000 byte(s) in 1 object(s) allocated from:
+    #0 0x7f02976decaf  (/lib/x86_64-linux-gnu/libasan.so.8+0xdecaf) (BuildId: 48bcd16656dd9a06c50a7dd781d890eba176436a)
+    #1 0x5601e3345926  (/home/marko/side/neur_game/m+0xa926) (BuildId: 41370b0da8f9352181acddf7df8b51548c645da7)
+    #2 0x7f0297223a8f  (/lib/x86_64-linux-gnu/libc.so.6+0x23a8f) (BuildId: bdb8aa3b1b60f9d43e1c70ba98158e05f765efdc)
+
+Direct leak of 256 byte(s) in 1 object(s) allocated from:
+    #0 0x7f02976ddab0  (/lib/x86_64-linux-gnu/libasan.so.8+0xddab0) (BuildId: 48bcd16656dd9a06c50a7dd781d890eba176436a)
+    #1 0x7f02916cb7a8  (<unknown module>)
+
+Indirect leak of 56 byte(s) in 1 object(s) allocated from:
+    #0 0x7f02976de667  (/lib/x86_64-linux-gnu/libasan.so.8+0xde667) (BuildId: 48bcd16656dd9a06c50a7dd781d890eba176436a)
+    #1 0x7f029223a7d5  (<unknown module>)
+
+Indirect leak of 56 byte(s) in 1 object(s) allocated from:
+    #0 0x7f02976de667  (/lib/x86_64-linux-gnu/libasan.so.8+0xde667) (BuildId: 48bcd16656dd9a06c50a7dd781d890eba176436a)
+    #1 0x7f029223a7be  (<unknown module>)
+
+SUMMARY: AddressSanitizer: 4320368 byte(s) leaked in 4 allocation(s).

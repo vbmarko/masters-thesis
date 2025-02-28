@@ -1,0 +1,50 @@
+NEURON files & Python code from paper:<br>
+<br>
+Rachel Humphries, Jack R. Mellor, Cian O'Donnell,
+Acetylcholine Boosts Dendritic NMDA Spikes in a CA3 Pyramidal Neuron Model,
+Neuroscience, 2021,ISSN 0306-4522
+https://doi.org/10.1016/j.neuroscience.2021.11.014<br>
+<br>
+In this paper, this model was used to compare the nonlinearity of NMDA inputs
+between dendritic sections in a CA3 pyramidal neuron as well as investigate
+the effect of cholinergic modulation/potassium channel inhibition on this 
+dendritic NMDA-mediated nonlinearity.<br>
+<br>
+NEURON and Python 3.8 were used to run the simulations. <br>
+<br>
+In the folder provided here are the mod files for each of the conductances/synaptic 
+mechanisms and the main hoc file (ca3b-cell1zr-fig9b.hoc - adapted from Hemond et al. 
+2008 model (accession no.:101629)). <br> 
+<br>
+The mod files will need to be compiled using the "mknrndll" command (on Windows).<br> 
+<br>
+**Hoc files** <br>
+(adapted from Hemond et al. 2008 (accession no.:101629))<br>
+ca3b-cell1zr-fig9b.hoc - main hoc file to set up model and insert conductances<br>
+geo-cell1zr.hoc - sets up neuron morphology<br>
+fixnseg.hoc - sets number of segments for each section<br>
+<br>
+Python was used to run simulations, analyse and plot the data.<br> 
+<br>
+**Python files**<br>
+measure_dend_Rin_rest.py - Measures dendritic input resistance at rest.<br>
+nonlinearity_all_dends.py - Produces data used in Figures 3 and 4 of the paper. <br>
+ach_exp.py - Produces data used in Figures 5 and 6 of the paper. <br>
+ca3_synapse_functions.py - additional functions required for running the simulations<br>
+Fig5_example_dend_traces.py - Runs the simulation for 6 example dendrites and plots
+neuron morphology and example voltages traces from Figure 5A,B+C of the paper. <br>
+add_scalebar_func.py & scalebars.py - scalebar functions for plotting<br>
+<br>
+Simulation outputs are saved in pickle files.<br> 
+<br>
+**PNG files**<br>
+Output from running Fig5_example_dend_traces.py - this will take a couple of hours
+to run.<br>
+Representative of Figure 5A,B+C from paper - from running the simulation with the 
+6 highlighted dendrites.<br>
+<br>
+**Note** <br>
+On a standard PC, ach_exp.py with the default parameters (20 inputs on all 
+dendritic sections + all conditions) may take >24 hours to run.<br>
+
+
