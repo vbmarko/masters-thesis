@@ -23,6 +23,7 @@
 #include "my_nrn_lib.h"
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_eigen.h>
+#include "gsl_funs.h"
 
 
 
@@ -102,7 +103,7 @@ int paren_idx(char *sec,NEURON_CELL *c){
 
 
 
-void init_cell(NEURON_CELL *c, char *cell_name, char* morph_path){
+void init_cell(double Rm, double v0, NEURON_CELL *c, char *cell_name, char* morph_path){
 	c->n_syn = 0;
 	char *cmd = format_string("objref %s",cell_name);
 	hoc_valid_stmt(cmd,0);
@@ -110,6 +111,10 @@ void init_cell(NEURON_CELL *c, char *cell_name, char* morph_path){
 	hoc_valid_stmt(cmd,0);
 	cmd = format_string("%s.AddMorph(\"%s\")",cell_name,morph_path);
 	hoc_valid_stmt(cmd,0);
+
+	cmd = format_string("%s.SetCellProperties(%g,%g)",cell_name,Rm,v0);
+	hoc_valid_stmt(cmd,0);
+
 	cmd = format_string("%s.geom_nseg()",cell_name);
 	hoc_valid_stmt(cmd,0);
 
@@ -123,12 +128,44 @@ void init_cell(NEURON_CELL *c, char *cell_name, char* morph_path){
 
 	cmd = format_string("%s.init_G_n_C()",cell_name);
 	hoc_valid_stmt(cmd,0);
+	cmd = format_string("%s.init_D()",cell_name);
+	hoc_valid_stmt(cmd,0);
 	int n_r = matrix_nrow(c, "G"), n_c = matrix_ncol(c, "G");
 	gsl_matrix *G = gsl_matrix_calloc(n_c,n_r);
+	gsl_matrix *D = gsl_matrix_calloc(n_c,n_r);
+	hoc_to_gsl_matrix(G,c, "G");
+	hoc_to_gsl_matrix(D,c, "D");
+
+
+	gsl_matrix *A = gsl_matrix_calloc(n_c,n_r);
+	binarize_matrix(A,G,0);
+	
+	gsl_matrix *L = gsl_matrix_calloc(n_c,n_r);
+	gsl_matrix *Lw = gsl_matrix_calloc(n_c,n_r);
+	compute_laplacian_matrix(L,A);
+	compute_laplacian_matrix(Lw,G);
+
+	gsl_matrix *evec = gsl_matrix_calloc(n_c,n_r);
+	gsl_vector *eval = gsl_vector_calloc(n_c);
+	compute_eigenvalues(eval,evec,A);
+
+	gsl_vector *d = gsl_vector_calloc(n_c);
+	compute_degree_vector(d,A);
+
 	gsl_vector*C = gsl_vector_calloc(n_c);
+
 	c->G = G;
 	c->C = C;
-	hoc_to_gsl_matrix(c->G,c, "G");
+	c->D = D;
+	c->L = L;
+	c->Lw = Lw;
+	c->d = d;
+	c->A = A;
+	c->evec = evec;
+	c->eval = eval;
+
+	
+
 	//Awfull jank below
 	char *line = (char *)calloc(256,sizeof(char));
         hoc_valid_stmt("objref sr",0);

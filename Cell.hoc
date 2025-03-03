@@ -25,9 +25,9 @@ begintemplate Cell
 public init, printInfo, execute_commands, AddHocMorph, AddMorph, getCCell, setCCell, geom_nsec, geom_nseg_lambda, geom_nseg_fixed, SetCellProperties, connect2target, delete_axon, insertChannel, geom_nseg, init_G_n_C
 public locateBAPSite, getLongestBranch, locateSites2, enable_ttx, disable_ttx
 public soma, dend, apic, axon, endfoot, myelin, nSecAxonal, nSecAxonalOrig, segCounts, rnglist, synHelperList, indexSections
-public synlist, all, apical, basal, somatic, axonal, endfeet, gid, nSecAll, nSecSoma, nSecApical, nSecBasal, clear, ASCIIrpt, HDF5rpt, APC
-public sec_adj_mat, init_sec_adj, print_sec_adj, seg_adj_mat, init_seg_adj, print_seg_adj,C, init_voltage, eval, evec, init_eigen, ri_vec, p_ri_vec, area_vec,seg_id_vec,seg_p_id_vec, init_ri_n_area, print_ri_n_area, sec_idx,G
-objref synlist, all, apical, basal, somatic, axonal, endfeet, this, CCellRef, ASCIIrpt, HDF5rpt, APC, segCounts, rnglist, synHelperList, sec_adj_mat, seg_adj_mat, evec, eval, ri_vec, area_vec,seg_id_vec, seg_p_id_vec, p_ri_vec, sec_idxs, G, C
+public synlist, all, apical, basal, somatic, axonal, endfeet, gid, nSecAll, nSecSoma, nSecApical, nSecBasal, clear, ASCIIrpt, HDF5rpt, APC, seg_g_pas
+public sec_adj_mat, init_sec_adj, print_sec_adj, seg_adj_mat, init_seg_adj, print_seg_adj,C, init_voltage, eval, evec, init_eigen, ri_vec, p_ri_vec, area_vec,seg_id_vec,seg_p_id_vec, init_ri_n_area, print_ri_n_area, sec_idx,G, D, init_D, seg_L, matrix_to_svc, vector_to_svc
+objref synlist, all, apical, basal, somatic, axonal, endfeet, this, CCellRef, ASCIIrpt, HDF5rpt, APC, segCounts, rnglist, synHelperList, sec_adj_mat, seg_adj_mat, evec, eval, ri_vec, area_vec,seg_id_vec, seg_p_id_vec, p_ri_vec, sec_idxs, G, C, D, seg_L,seg_g_pas
 
 //! Used when computing nseg per section
 external lambda_f
@@ -43,6 +43,22 @@ external ext_simconfig
  * @param $1 gid [optional] Unique identifier for this cell if it to be used in a network
  * @param $s2 full path to morphology [optional] file to load in cell's geometric information
  */
+
+
+proc matrix_to_svc(){localobj f
+	f = new File()
+	f.wopen($s2)
+	$o1.fprint(f)
+	f.close()
+}
+
+proc vector_to_svc(){localobj f
+	f = new File()
+	f.wopen($s2)
+	$o1.printf(f)
+	f.close()
+}
+
 proc init() {
     gid     = 0
     all     = new SectionList()
@@ -586,6 +602,8 @@ proc init_ri_n_area(){local sidx, idx, nSeg, my_idx, rim,rip, paren_idx localobj
 	area_vec = new Vector(nSeg)
 	seg_id_vec = new Vector(nSeg)
 	seg_p_id_vec = new Vector(nSeg)
+	seg_L = new Vector(nSeg)
+	seg_g_pas = new Vector(nSeg)
 
 	forsec all {
 	    sr = new SectionRef()
@@ -594,6 +612,7 @@ proc init_ri_n_area(){local sidx, idx, nSeg, my_idx, rim,rip, paren_idx localobj
 
 	    tmp = 0
             for (x,0){
+	    	seg_g_pas.x[idx] = g_pas
 	    	rim = ri(x)
 		rip = 0
 	    	if(tmp == 0){
@@ -609,7 +628,8 @@ proc init_ri_n_area(){local sidx, idx, nSeg, my_idx, rim,rip, paren_idx localobj
 			seg_p_id_vec.x[idx] = my_idx + x - 1/(sr.sec.nseg)
 		}
 		tmp = tmp +1
-	    	seg_id_vec.x[idx] = my_idx + x 
+	    	seg_id_vec.x[idx] = my_idx + x
+		sr.sec {seg_L.x[idx] =  L/nseg}
 	    	ri_vec.x[idx] = rim
 	    	p_ri_vec.x[idx] = rip
 		area_vec.x[idx] = area(x)
@@ -638,6 +658,7 @@ proc init_G_n_C(){local g
 		C.x[i] = area_vec.x[i]*cm
 		my_d_id = seg_id_vec.x[i]
 		p_d_id = seg_p_id_vec.x[i]
+		G.x[i][i] = -seg_g_pas.x[i]
 		if(p_d_id > 0){
 		my_id = i
 		p_id = seg_id_vec.indwhere("==",p_d_id)
@@ -652,6 +673,23 @@ proc init_G_n_C(){local g
 		}
 	}
 }
+
+proc init_D(){
+	nSeg = seg_id_vec.size()
+	D = new Matrix(nSeg,nSeg)
+	for(i=0; i < nSeg;i+=1){
+		my_d_id = seg_id_vec.x[i]
+		p_d_id = seg_p_id_vec.x[i]
+		if(p_d_id > 0){
+		my_id = i
+		p_id = seg_id_vec.indwhere("==",p_d_id)	
+		D.x[my_id][p_id] = (1/2)*(seg_L.x[my_id] +seg_L.x[p_id])
+		D.x[p_id][my_id] = (1/2)*(seg_L.x[my_id] +seg_L.x[p_id])
+		}
+	}
+}
+
+
 
 
 proc init_eigen(){local my_idx, paren_idx localobj sr

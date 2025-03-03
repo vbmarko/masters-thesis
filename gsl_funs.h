@@ -8,8 +8,11 @@ void print_vector(const gsl_vector *v);
 void rand_tree(gsl_matrix *A,int (*depth)(int n), double(*ro)(int d));
 int depth(int n);
 double ro(int d);
-void compute_eigenvalues(const gsl_matrix *A, gsl_vector *eval, gsl_matrix *evec);
-void compute_degree_matrix(const gsl_matrix *A, gsl_matrix *D);
+void compute_degree_matrix(gsl_matrix *D,gsl_matrix *A) ;
+void compute_laplacian_matrix(gsl_matrix *L,const gsl_matrix *A);
+void compute_degree_vector(gsl_vector *d,const gsl_matrix *A);
+void compute_eigenvalues( gsl_vector *eval, gsl_matrix *evec,const gsl_matrix *A);
+void binarize_matrix(gsl_matrix *out,const gsl_matrix *in,double thresh);
 
 
 

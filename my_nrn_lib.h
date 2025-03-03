@@ -1,11 +1,12 @@
 #pragma once
+#include <gsl/gsl_vector_double.h>
+#include <gsl//gsl_matrix.h>
 typedef struct NEURON_SEGMENT NEURON_SEGMENT;
 typedef struct NEURON_SECTION NEURON_SECTION;
 typedef struct NEURON_CELL NEURON_CELL;
 typedef struct NEURON_MECHANISM NEURON_MEHCANISM;
 typedef struct NEURON_SYNAPSE NEURON_SYNAPSE;
 
-#include <gsl//gsl_matrix.h>
 
 struct NEURON_SEGMENT{
 	int sec_id;
@@ -41,7 +42,11 @@ struct NEURON_CELL{
 	gsl_matrix *A;
 	gsl_matrix *L;
 	gsl_matrix *Lw;
+	gsl_matrix *D;
 	gsl_vector *C;
+	gsl_vector *d;
+	gsl_vector *eval;
+	gsl_matrix *evec;
 	
 };
 
@@ -67,9 +72,10 @@ struct NEURON_SYNAPSE{
 	double s;
 };
 
+
 void free_cell(NEURON_CELL *c);
 void init_mechanism(NEURON_MEHCANISM *mech);
-void init_cell(NEURON_CELL *c, char *cell_name, char* morph_path);
+void init_cell(double Rm, double v0, NEURON_CELL *c, char *cell_name, char* morph_path);
 void insert_chan_at_sec(char *chan,int i_sec,NEURON_CELL *c);
 void insert_syn_at_sec(char *syn,char *syn_name,int i_sec,NEURON_CELL *c,double s);
 void insert_chan(char *chan);

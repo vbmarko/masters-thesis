@@ -1,16 +1,20 @@
 #include <bits/pthreadtypes.h>
+#include <gsl/gsl_cblas.h>
 #include <gsl/gsl_matrix_double.h>
 #include <gsl/gsl_vector_double.h>
+#include <math.h>
 #include <stdio.h>
 #include <assert.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_eigen.h>
+#include <gsl/gsl_blas.h>
+#include <assert.h>
+#include <math.h>
 
 
 
-
-void compute_eigenvalues(const gsl_matrix *A, gsl_vector *eval, gsl_matrix *evec) {
+void compute_eigenvalues(gsl_vector *eval, gsl_matrix *evec,const gsl_matrix *A) {
     gsl_matrix *A_copy = gsl_matrix_alloc(A->size1, A->size2);
     gsl_matrix_memcpy(A_copy, A);
 
@@ -26,8 +30,31 @@ void compute_eigenvalues(const gsl_matrix *A, gsl_vector *eval, gsl_matrix *evec
 }
 
 
+void binarize_matrix(gsl_matrix *out,const gsl_matrix *in,double thresh){
+	int in1 = in->size1, in2 = in->size2, on1 = out->size1, on2 = out->size2;
+	double val = 0;
+	assert(in1 == on1); assert(in2 == on2);
+	gsl_matrix_set_zero(out);
+	for(int i = 0;i<in1;++i){
+		for(int j = 0;j<in2;++j){
+			val = gsl_matrix_get(in, i, j);
+			if(fabs(val) > thresh){
+				gsl_matrix_set(out, i, j,(val > 0) - (val < 0));				
+			}
+		}
+	}
+}
 
-void compute_degree_matrix(const gsl_matrix *A, gsl_matrix *D) {
+void propagator(gsl_matrix *P,double tau,const gsl_vector *eval, const gsl_matrix *evec){
+	for(int i = 0;i<P->size1;++i){
+		gsl_matrix_set(P,i,i,exp(-tau*gsl_vector_get(eval,i)));
+	}
+	gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1,P, evec,0,P);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1,evec,P,0,P);
+
+}
+
+void compute_degree_matrix(gsl_matrix *D,const gsl_matrix *A) {
     size_t n = A->size1;
 
     // Initialize degree matrix to zeros
@@ -43,6 +70,34 @@ void compute_degree_matrix(const gsl_matrix *A, gsl_matrix *D) {
         gsl_matrix_set(D, i, i, degree); // Set diagonal entry to degree
     }
 }
+
+void compute_degree_vector(gsl_vector *d, const gsl_matrix *A) {
+    size_t n = A->size1;
+
+
+    for (size_t i = 0; i < n; i++) {
+        double degree = 0.0;
+
+        for (size_t j = 0; j < n; j++) {
+            degree += gsl_matrix_get(A, i, j);
+        }
+
+        gsl_vector_set(d, i,degree); // Set diagonal entry to degree
+    }
+}
+
+
+void compute_laplacian_matrix(gsl_matrix *L,const gsl_matrix *A){
+	assert(L->size1 == L->size2);
+	int n = L->size1;
+	gsl_matrix *D = gsl_matrix_calloc(n,n);
+	compute_degree_matrix(D,A);
+	gsl_matrix_add(L,D);
+	gsl_matrix_sub(L,A);
+	gsl_matrix_free(D);
+}
+
+
 
 // Function to print a GSL matrix
 void print_matrix(const gsl_matrix *m) {

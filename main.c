@@ -17,6 +17,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include "./panes/rl_panes.h"
+#include "./panes/raylib.h"
 #include <string.h>
 
 
@@ -51,9 +53,18 @@ int main(int argc, char **argv) {
     NEURON_CELL *c = (NEURON_CELL*) malloc(sizeof(NEURON_CELL));
     
 
-    double Rm = 33, v_init = 0;
-    init_cell(c, "c", morph_path);
-    print_matrix(c->G);
+    double Rm = 3300, v_init = -65;
+    init_cell(Rm,v_init,c, "c", morph_path);
+    printf("\n");
+    //print_matrix(c->G);
+
+    char *cmd = format_string("%s.matrix_to_svc(%s,%s)",c->name,"c.G","\"G.svc\"");
+    hoc_valid_stmt(cmd,0);
+
+    cmd = format_string("%s.vector_to_svc(%s,%s)",c->name,"c.C","\"C.svc\"");
+    hoc_valid_stmt(cmd,0);
+
+    printf("\n\n %f",c->D->data[0]);
     return 0;
 
 

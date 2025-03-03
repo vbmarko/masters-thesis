@@ -4,11 +4,13 @@ c = new Cell()
 c.init()
 c.AddMorph("c91662.swc")
 c.delete_axon()
+c.SetCellProperties(3300,-75)
 c.geom_nseg()
 c.init_ri_n_area()
 c.print_ri_n_area()
-c.init_G()
+c.init_G_n_C()
 c.G.printf()
+c.matrix_to_svc(c.G,"G.svc")
 
 
 
