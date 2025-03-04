@@ -26,8 +26,8 @@ public init, printInfo, execute_commands, AddHocMorph, AddMorph, getCCell, setCC
 public locateBAPSite, getLongestBranch, locateSites2, enable_ttx, disable_ttx
 public soma, dend, apic, axon, endfoot, myelin, nSecAxonal, nSecAxonalOrig, segCounts, rnglist, synHelperList, indexSections
 public synlist, all, apical, basal, somatic, axonal, endfeet, gid, nSecAll, nSecSoma, nSecApical, nSecBasal, clear, ASCIIrpt, HDF5rpt, APC, seg_g_pas
-public sec_adj_mat, init_sec_adj, print_sec_adj, seg_adj_mat, init_seg_adj, print_seg_adj,C, init_voltage, eval, evec, init_eigen, ri_vec, p_ri_vec, area_vec,seg_id_vec,seg_p_id_vec, init_ri_n_area, print_ri_n_area, sec_idx,G, D, init_D, seg_L, matrix_to_svc, vector_to_svc
-objref synlist, all, apical, basal, somatic, axonal, endfeet, this, CCellRef, ASCIIrpt, HDF5rpt, APC, segCounts, rnglist, synHelperList, sec_adj_mat, seg_adj_mat, evec, eval, ri_vec, area_vec,seg_id_vec, seg_p_id_vec, p_ri_vec, sec_idxs, G, C, D, seg_L,seg_g_pas
+public sec_adj_mat, init_sec_adj, print_sec_adj, seg_adj_mat, init_seg_adj, print_seg_adj,C, init_voltage, eval, evec, init_eigen, ri_vec, p_ri_vec, area_vec,seg_id_vec,seg_p_id_vec, init_ri_n_area, print_ri_n_area, sec_idx,G, D, init_D, seg_L, matrix_to_csv, vector_to_csv,sec_id,sec_p_id
+objref synlist, all, apical, basal, somatic, axonal, endfeet, this, CCellRef, ASCIIrpt, HDF5rpt, APC, segCounts, rnglist, synHelperList, sec_adj_mat, seg_adj_mat, evec, eval, ri_vec, area_vec,seg_id_vec, seg_p_id_vec, p_ri_vec, sec_idxs, G, C, D, seg_L,seg_g_pas,sec_id,sec_p_id
 
 //! Used when computing nseg per section
 external lambda_f
@@ -45,14 +45,14 @@ external ext_simconfig
  */
 
 
-proc matrix_to_svc(){localobj f
+proc matrix_to_csv(){localobj f
 	f = new File()
 	f.wopen($s2)
-	$o1.fprint(f)
+	$o1.fprint(f,"%-8g",",")
 	f.close()
 }
 
-proc vector_to_svc(){localobj f
+proc vector_to_csv(){localobj f
 	f = new File()
 	f.wopen($s2)
 	$o1.printf(f)
@@ -143,6 +143,7 @@ proc AddMorph(){ localobj morph, import, strobj, morphPath, extension, global_ex
         morph = new Import3d_Neurolucida3()
     } else if( strcmp(extension.s, "swc") == 0 ) {
         morph = new Import3d_SWC_read()
+	indexSections()
     } else {
         terminate("Unsupported file format: Morphology file has to end with .asc or .swc" )
     }
@@ -574,14 +575,22 @@ obfunc locateBAPSite() {local thisdiam, iSite, thickSite localobj sitesList, ret
 }
 
 proc init_sec_adj(){local my_idx, paren_idx localobj sr
+	indexSections()
 	sec_adj_mat = new Matrix(nSecAll,nSecAll)
+	sec_id = new Vector(nSecAll)
+	sec_p_id = new Vector(nSecAll)
+	i = 0
 	forsec all {
             sr = new SectionRef()
 	    sr.sec {my_idx = v}
 	    if(sr.has_parent){sr.parent {paren_idx = v}}
 	    //printf("(%.0f,%.0f)\n",my_idx,paren_idx)
+	    sec_id.x[i] = my_idx
+	    if(sr.has_parent){sec_p_id.x[i] = paren_idx
+	    }else{sec_p_id.x[i] = -1}
 	    sec_adj_mat.x[my_idx][paren_idx] = 1
-	    sec_adj_mat.x[paren_idx][my_idx] = 1}
+	    sec_adj_mat.x[paren_idx][my_idx] = 1
+	    i = i+1}
 	}
 proc print_sec_adj(){
   for i=0,sec_adj_mat.nrow-1 {
@@ -594,7 +603,7 @@ proc print_sec_adj(){
 
 
 proc init_ri_n_area(){local sidx, idx, nSeg, my_idx, rim,rip, paren_idx localobj sr
-	indexSections()
+	init_sec_adj()
 	nSeg = 0
 	forsec all {nSeg = nSeg+nseg}
 	ri_vec = new Vector(nSeg)
@@ -604,30 +613,33 @@ proc init_ri_n_area(){local sidx, idx, nSeg, my_idx, rim,rip, paren_idx localobj
 	seg_p_id_vec = new Vector(nSeg)
 	seg_L = new Vector(nSeg)
 	seg_g_pas = new Vector(nSeg)
-
-	forsec all {
+	i = 0
+	idx = 0
+	forsec all{
 	    sr = new SectionRef()
-	    sr.sec {my_idx = v}
-	    if(sr.has_parent){sr.parent {paren_idx = v}}
-
+	    my_idx = sec_id.x[i]
+	    paren_idx = sec_p_id.x[i]
+	    i = i+1
 	    tmp = 0
             for (x,0){
 	    	seg_g_pas.x[idx] = g_pas
 	    	rim = ri(x)
 		rip = 0
+		printf("my_id = %d, p_id = %d\n",my_idx,paren_idx)
 	    	if(tmp == 0){
 			ofset = 0
-			if(sr.has_parent){
-				sr.parent {rip = ri(1)
-					   ofset = 1/2*nseg}	
-
-				seg_p_id_vec.x[idx] = paren_idx+ofset 
+			if(paren_idx >= 0){
+			sr.parent {
+			rip = ri(1)
+			ofset = 1/(2*nseg)
+			}
 			}	
+			seg_p_id_vec.x[idx] = paren_idx  + ofset
 		}else{	
 			ofset = 0
 			seg_p_id_vec.x[idx] = my_idx + x - 1/(sr.sec.nseg)
 		}
-		tmp = tmp +1
+		tmp = tmp + 1
 	    	seg_id_vec.x[idx] = my_idx + x
 		sr.sec {seg_L.x[idx] =  L/nseg}
 	    	ri_vec.x[idx] = rim
@@ -659,8 +671,9 @@ proc init_G_n_C(){local g
 		my_d_id = seg_id_vec.x[i]
 		p_d_id = seg_p_id_vec.x[i]
 		G.x[i][i] = -seg_g_pas.x[i]
-		if(p_d_id > 0){
+
 		my_id = i
+		if(p_d_id > 0){
 		p_id = seg_id_vec.indwhere("==",p_d_id)
 		if(gfloor(my_d_id) - gfloor(p_d_id) != 0){
 			g = 1/(p_ri_vec.x[i] + ri_vec.x[i])

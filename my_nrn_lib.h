@@ -45,6 +45,7 @@ struct NEURON_CELL{
 	gsl_matrix *D;
 	gsl_vector *C;
 	gsl_vector *d;
+	gsl_matrix *sA;
 	gsl_vector *eval;
 	gsl_matrix *evec;
 	
@@ -85,3 +86,5 @@ void update_sec_embedding(int fix_idx,NEURON_SECTION sec, double f_0, double f_1
 void ball_n_y_swc(char *fpath,double soma_diam,double diam_i,double diam_b,double diam_t,double L_stick, double L_branch,double res);
 void print_mech(NEURON_MEHCANISM *m);
 void set_cell_properties(NEURON_CELL *c,double Rm,double v_init);
+void hoc_to_gsl_matrix(gsl_matrix* m,NEURON_CELL *c, char *m_name);
+void hoc_to_gsl_vector(gsl_vector* v,NEURON_CELL *c, char *v_name);

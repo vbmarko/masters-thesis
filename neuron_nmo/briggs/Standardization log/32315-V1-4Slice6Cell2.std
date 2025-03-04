@@ -1,0 +1,16 @@
+# Standardization file for C:\NMO_dev\data_proc\Temp_LMeasure\32315-V1-4Slice6Cell2.asc.swc created with StdSwc version 1.31 on 11/12/18.
+# Edited SWC file saved as C:\NMO_dev\data_proc\Temp_LMeasure\32315-V1-4Slice6Cell2.asc.swc.CNG.swc.  See StdSwc1.31.doc for more information.
+#
+# code   irregularity_description. (action taken)
+#     irregularity_type     coordinates
+#
+2.1  Line 1 has 10 daughters.  Type is 1.  (no action taken)
+     B1      X, Y, Z:  -4606.38  -2358.23  72.48
+ 
+ 
+
+
+Number of type A irregularities = 0
+Number of type B1 irregularities = 1
+Number of type B2 irregularities = 0
+Number of type C irregularities = 0

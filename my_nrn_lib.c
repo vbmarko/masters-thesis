@@ -55,6 +55,15 @@ void hoc_to_gsl_matrix(gsl_matrix* m,NEURON_CELL *c, char *m_name){
 
 }
 
+void hoc_to_gsl_vector(gsl_vector* v,NEURON_CELL *c, char *v_name){
+	for(int i = 0;i<v->size;++i){
+			char *cmd = format_string("hoc_ac_ = %s.%s.x[%d]",c->name,v_name,i);
+			hoc_valid_stmt(cmd, 0);
+			gsl_vector_set(v,i,hoc_ac_);
+		}
+	}
+
+
 void free_cell(NEURON_CELL *c) {
     if (c != NULL) {
         // Free each section's dynamically allocated members
@@ -112,6 +121,9 @@ void init_cell(double Rm, double v0, NEURON_CELL *c, char *cell_name, char* morp
 	cmd = format_string("%s.AddMorph(\"%s\")",cell_name,morph_path);
 	hoc_valid_stmt(cmd,0);
 
+	
+	cmd = format_string("%s.delet_axon()",cell_name);
+
 	cmd = format_string("%s.SetCellProperties(%g,%g)",cell_name,Rm,v0);
 	hoc_valid_stmt(cmd,0);
 
@@ -126,6 +138,8 @@ void init_cell(double Rm, double v0, NEURON_CELL *c, char *cell_name, char* morp
 	c->name = cell_name;
 	c->sec = (NEURON_SECTION*) malloc(sizeof(NEURON_SECTION)*c->n_sec);
 
+
+
 	cmd = format_string("%s.init_G_n_C()",cell_name);
 	hoc_valid_stmt(cmd,0);
 	cmd = format_string("%s.init_D()",cell_name);
@@ -135,6 +149,15 @@ void init_cell(double Rm, double v0, NEURON_CELL *c, char *cell_name, char* morp
 	gsl_matrix *D = gsl_matrix_calloc(n_c,n_r);
 	hoc_to_gsl_matrix(G,c, "G");
 	hoc_to_gsl_matrix(D,c, "D");
+
+
+	gsl_matrix *As = gsl_matrix_calloc(c->n_sec, c->n_sec);
+	//cmd = format_string("%s.init_sec_adj()",cell_name);
+	//hoc_valid_stmt(cmd,0);
+
+	
+	hoc_to_gsl_matrix(As,c, "sec_adj_mat");
+	c->sA = As;
 
 
 	gsl_matrix *A = gsl_matrix_calloc(n_c,n_r);
@@ -152,7 +175,8 @@ void init_cell(double Rm, double v0, NEURON_CELL *c, char *cell_name, char* morp
 	gsl_vector *d = gsl_vector_calloc(n_c);
 	compute_degree_vector(d,A);
 
-	gsl_vector*C = gsl_vector_calloc(n_c);
+	gsl_vector* C = gsl_vector_calloc(n_c);
+	hoc_to_gsl_vector(C, c, "C");
 
 	c->G = G;
 	c->C = C;

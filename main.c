@@ -45,10 +45,11 @@ int main(int argc, char **argv) {
     print_mech(mech);
 
     char *template_path = "Cell.hoc";
-    char *morph_path = "bny.swc";
+    ball_n_y_swc("bny.swc", 10, 1, .5, .1, 500, 200, 1);
+
+    char *morph_path = "te2.swc";
     load_file(template_path);
     //load_file(template_path);
-    //ball_n_y_swc("bny.swc", 8, 1, .2, .1, 500, 250, 5);
 
     NEURON_CELL *c = (NEURON_CELL*) malloc(sizeof(NEURON_CELL));
     
@@ -56,15 +57,33 @@ int main(int argc, char **argv) {
     double Rm = 3300, v_init = -65;
     init_cell(Rm,v_init,c, "c", morph_path);
     printf("\n");
-    //print_matrix(c->G);
+    print_matrix(c->G);
 
-    char *cmd = format_string("%s.matrix_to_svc(%s,%s)",c->name,"c.G","\"G.svc\"");
+    printf("\n");
+
+
+    matrix_to_file(c->G, "G.csv", ',', "%g");
+    matrix_to_file(c->sA, "sA.csv", ',', "%g");
+    vector_to_file(c->C, "C.csv", ',', "%g");
+
+ 
+
+
+    char *cmd = format_string("%s.C.printf()",c->name);
     hoc_valid_stmt(cmd,0);
 
-    cmd = format_string("%s.vector_to_svc(%s,%s)",c->name,"c.C","\"C.svc\"");
-    hoc_valid_stmt(cmd,0);
+    cmd = format_string("%s.print_ri_n_area()",c->name);
+    hoc_valid_stmt(cmd, 0);
 
-    printf("\n\n %f",c->D->data[0]);
+    gsl_vector *sid = gsl_vector_calloc(c->C->size);
+
+    hoc_to_gsl_vector(sid, c,"seg_id_vec");
+
+    vector_to_file(sid, "sid.csv", ',', "%g");
+
+
+
+
     return 0;
 
 

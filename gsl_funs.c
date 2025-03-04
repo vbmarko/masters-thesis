@@ -11,8 +11,38 @@
 #include <gsl/gsl_blas.h>
 #include <assert.h>
 #include <math.h>
+#include "util.h"
 
 
+
+void matrix_to_file(const gsl_matrix *m,char *fpath,char delim,char *fmt){
+	file f = toggle_capture_out_on(fpath);
+	int n_ro = m->size1, n_co = m->size2;
+	for(int i = 0;i<n_ro;++i){
+		for(int j = 0;j<n_co;++j){
+			printf(fmt,gsl_matrix_get(m,i,j));
+			if(j < n_co -1){
+				printf("%c",delim);
+			}
+		}
+
+		printf("\n");
+	}
+	toggle_capture_out_off(&f);
+}
+
+
+void vector_to_file(const gsl_vector *v,char *fpath,char delim,char *fmt){
+	file f = toggle_capture_out_on(fpath);
+	int n = v->size;
+	for(int i = 0;i<n;++i){
+			printf(fmt,gsl_vector_get(v,i));
+			if(i < n -1){
+				printf("%c",delim);
+			}
+		}	
+	toggle_capture_out_off(&f);
+	}
 
 void compute_eigenvalues(gsl_vector *eval, gsl_matrix *evec,const gsl_matrix *A) {
     gsl_matrix *A_copy = gsl_matrix_alloc(A->size1, A->size2);
